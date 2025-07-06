@@ -1,0 +1,57 @@
+﻿version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: news_db
+      POSTGRES_USER: news_user
+      POSTGRES_PASSWORD: news_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: telegram_news_bot
+    env_file:
+      - .env.docker
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    # ❗ Не монтируем ./bot, чтобы не затирать файлы в /app
+
+  admin_panel:
+    build: ./admin_panel
+    ports:
+      - "8000:8000"
+    restart: always
+    depends_on:
+      - postgres
+
+  rqdashboard:
+    image: eoranged/rq-dashboard
+    ports:
+      - "9181:9181"
+    environment:
+      - RQ_DASHBOARD_REDIS_URL=redis://redis:6379
+    restart: always
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
+  postgres_data:
