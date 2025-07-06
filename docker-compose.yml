@@ -1,0 +1,32 @@
+
+services:
+  redis:
+    image: redis
+    volumes:
+      - redis_data:/data
+
+  bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./bot:/app
+    env_file: .env.docker
+    restart: always
+    depends_on:
+      - redis
+
+  admin_panel:
+    build: ./admin_panel
+    ports:
+      - "8000:8000"
+
+  rqdashboard:
+    image: eoranged/rq-dashboard
+    ports:
+      - "9181:9181"
+    environment:
+      - RQ_DASHBOARD_REDIS_URL=redis://redis:6379
+
+volumes:
+  redis_data:
